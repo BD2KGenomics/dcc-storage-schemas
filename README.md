@@ -24,6 +24,15 @@ You need to make sure you have system level dependencies installed in the approp
 
     sudo apt-get install python-dev libxml2-dev libxslt-dev lib32z1-dev
 
+### Elasticsearch
+
+Download and install elasticsearch.  I found the debian package to be easiest on Ubuntu.  Start it using the /etc/init.d/elasticsearch script. Or, if you're on a mac, you can download a tarball and just execute the ./bin/elasticsearch script.
+
+Use [elasticsearch 1.7.2](https://www.elastic.co/downloads/past-releases/elasticsearch-1-7-2).  Newer (2.x) versions will
+work for our indexing but our facet file browser requires an older version of elasticsearch.
+
+NOTE: elasticsearch is not secure. Do not run it on a web server open to the outside world.
+
 ### Python
 
 Use python 2.7.x.
@@ -41,9 +50,7 @@ Now to setup:
 
     virtualenv env
     source env/bin/activate
-    pip install jsonschema jsonmerge openpyxl sets json-spec elasticsearch semver luigi
-
-
+    pip install jsonschema jsonmerge openpyxl sets json-spec elasticsearch semver luigi python-dateutil cwl-runner cwltool==1.0.20160316150250 schema-salad==1.7.20160316150109 avro==1.7.7 typing
 
 Alternatively, you may want to use Conda, see [here](http://conda.pydata.org/docs/_downloads/conda-pip-virtualenv-translator.html)
  [here](http://conda.pydata.org/docs/test-drive.html), and [here](http://kylepurdon.com/blog/using-continuum-analytics-conda-as-a-replacement-for-virtualenv-pyenv-and-more.html)
@@ -51,7 +58,7 @@ Alternatively, you may want to use Conda, see [here](http://conda.pydata.org/doc
 
     conda create -n schemas-project python=2.7.11
     source activate schemas-project
-    pip install jsonschema jsonmerge openpyxl sets json-spec elasticsearch semver luigi
+    pip install jsonschema jsonmerge openpyxl sets json-spec elasticsearch semver luigi python-dateutil cwl-runner cwltool==1.0.20160316150250 schema-salad==1.7.20160316150109 avro==1.7.7 typing
 
 
 ## Generate Test Metadata (and Optionally Upload Data to Storage Service)
@@ -102,7 +109,7 @@ This tool takes multiple JSON files (see above) and merges them so we can have a
 This command will not download json files, instead the user will provide a directory that contains json files.
 
     python merge_gen_meta.py --only_Program TEST --only_Project TEST --test_directory output_metadata_7_20/ --metadataSchema metadata_schema.json
-    
+
 This produces a `validated.jsonl` and a `invalid.jsonl` file which is actually a JSONL file, e.g. each line is a JSON document.
 Now to view the output for the first line use the following:
 
@@ -150,11 +157,13 @@ If running esquery.py multiple times, remove the index with:
 
 ## Dashboard
 
-esquery.py will create an outfile called data.json. Add data.json along with the contents of the folder "Dashboard" to an AWS bucket and configure bucket according to the [AWS instructions on hosting a static website (steps 1, 2, and 3)] (http://docs.aws.amazon.com/gettingstarted/latest/swh/getting-started-create-bucket.html). 
+dashboard_query.py (in the Dashboard directory) will create an outfile called data.json. Add data.json along with the contents of the folder "Dashboard" to an AWS bucket and configure bucket according to the [AWS instructions on hosting a static website (steps 1, 2, and 3)] (http://docs.aws.amazon.com/gettingstarted/latest/swh/getting-started-create-bucket.html).
 
-To see the Dashboard, from your bucket, go to Properties, Static Website Hosting, and click on the link following "Endpoint." This directs you to index.html, with a static streamgraph (uses data.csv). Using the navagation, hover over Projects, then click Project 1 to see a bar chart using data.json.
+To see the Dashboard, from your bucket, go to Properties, Static Website Hosting, and click on the link following "Endpoint." This directs you to index.html, with a static streamgraph (uses data.csv). Using the navigation, hover over Projects, then click Project 1 to see a bar chart using data.json.
 
-Alternatively, run the Dashboard locally. Add data.json to the Dashboard folder and open index.html in Safari.
+Alternatively, run the Dashboard locally. Add data.json to the Dashboard folder, start the python web server (see command below), and open http://localhost:8080 in your web browser:
+
+    python -m SimpleHTTPServer 8080
 
 ## Demo
 
@@ -174,6 +183,67 @@ Following those lines, are the queries, which give information on:
 * number of documents that fit the query
 * number of documents that fit this query for a particular program
 * project name
+
+### services
+
+Make sure both luigi and elasticsearch are running in screen sessions.
+
+    # screen session 1
+    ~/elasticsearch-2.3.5/bin/elasticsearch &
+    # screen session 2
+    source env/bin/activate
+    luigid
+
+### simulate_upload.py
+
+This script runs an unlimited number of BAM file uploads at random intervals.  The script will run until killed.
+
+    cd luigi_task_executor
+    python simulate_upload.py --bam-url https://s3.amazonaws.com/oconnor-test-bucket/sample-data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam \
+    --input-metadata-schema ../input_metadata.json --metadata-schema ../metadata_schema.json --output-dir output_metadata --receipt-file receipt.tsv \
+    --storage-access-token `cat ../ucsc-storage2-client/accessToken` --metadata-server-url https://storage2.ucsc-cgl.org:8444 \
+    --storage-server-url https://storage2.ucsc-cgl.org:5431  --ucsc-storage-client-path ../ucsc-storage2-client
+
+### simulate_indexing.py
+
+    cd luigi_task_executor
+    python simulate_indexing.py --storage-access-token `cat ../ucsc-storage2-client/accessToken` --client-path ../ucsc-storage2-client --metadata-schema ../metadata_schema.json --server-host storage2.ucsc-cgl.org
+
+### simulate_analysis.py
+
+    cd luigi_task_executor
+    python simulate_analysis.py --es-index-host localhost --es-index-port 9200 --ucsc-storage-client-path ../ucsc-storage2-client --ucsc-storage-host https://storage2.ucsc-cgl.org
+
+    # temp
+    git hf update; git hf pull; PYTHONPATH='' luigi --module AlignmentQCTask AlignmentQCCoordinator --es-index-host localhost --es-index-port 9200 --ucsc-storage-client-path ../ucsc-storage2-client --ucsc-storage-host https://storage2.ucsc-cgl.org --tmp-dir `pwd`/luigi_state --data-dir /mnt/AlignmentQCTask --max-jobs 1
+
+### populate dashboard
+
+    cd Dashboard
+    python dashboard_query.py
+
+### populate file browser
+
+    cd Dashboard
+    python file_query.py
+    # make sure the mappings are correct:
+    curl -XGET 'http://localhost:9200/analysis_file_index/_mapping?pretty'
+    # delete old data if needed
+    curl -XDELETE http://localhost:9200/analysis_file_index
+    # edit the mapping, see mappings.json and https://www.elastic.co/blog/found-elasticsearch-mapping-introduction
+    curl -XPUT 'http://localhost:9200/analysis_file_index' -d @file_browser/mappings.json
+    # now load this
+    curl -XPUT http://localhost:9200/analysis_file_index/_bulk?pretty --data-binary @elasticsearch.jsonl
+    # check it's in es
+    curl -XGET http://localhost:9200/analysis_file_index/_search?pretty
+
+### run file browser
+
+    python -m SimpleHTTPServer 8000
+
+### CORS
+
+You may need to do the following to get cross-site scripting working:  http://www.oodlestechnologies.com/blogs/How-to-solve-No-Access-Control-Allow-Origin-with-elastic-search
 
 ## Data Types
 

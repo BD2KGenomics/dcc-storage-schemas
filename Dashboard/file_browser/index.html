@@ -1,0 +1,217 @@
+<!doctype html>
+<html ng-app="EsConnector">
+   <head>
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+         <title>File Browser</title>
+         
+         <link rel="stylesheet" type="text/css" href="../mystyle.css">
+         <link rel="stylesheet" href="common/css/normalize.min.css">
+         <link rel="stylesheet" href="common/css/main.min.css">
+         <link rel="stylesheet" href="common/css/bootstrap.min.css">
+         <link rel="stylesheet" href="common/css/bootstrap-responsive.min.css">
+         <link rel="stylesheet" href="common/css/elasticjs.css">
+         <script src="common/lib/modernizr-2.6.1.min.js"></script>
+         <script src="common/lib/underscore.min.js"></script>
+         <!-- project dependency libs -->
+         <script src="common/lib/angular.min.js"></script>
+         <script src="elasticsearch-js/elasticsearch.js"></script>
+         <script src="elasticsearch-js/elasticsearch.angular.js"></script>
+         
+         <!-- project specific files -->
+         <script src="js/app.essimple.js"></script>
+         
+         <!-- manifest download -->
+         <script src="common/js/filesaver.min.js"></script>
+         
+         <!-- pie chart -->
+         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+   </head>
+   
+   <style>
+      body{
+         font-family: Arial;
+      }
+
+      .chart {
+         background: #fff;
+         font: 10px;
+      }
+
+      .axis path, .axis line {
+         fill: none;
+         stroke: #000;
+         stroke-width: 2px;
+         shape-rendering: crispEdges;
+      }
+
+      .button {
+         border: none;
+         color: black;
+         text-align: center;
+         text-decoration: none;
+         display: inline-block;
+         margin: 1px 1px;
+         cursor: pointer;
+      }
+
+      hr {
+          border-width: 2px;
+      }
+   </style>
+   
+   <div class="imgcgl">
+      <div class="imgcontainer">
+         <a href="https://genomics.soe.ucsc.edu/">
+            <img src="../UCSC-Logo-genomics-web-80.png" alt="University of California Santa Cruz" class="imglogo" style="padding: 10px">
+         </a>
+      </div>
+      <div class="cglcontainer" style="float: right;">
+         <a href="https://cgl.genomics.ucsc.edu/" class="text">Computational Genomics Laboratory</a>
+      </div>
+   </div>
+   <ul class="header text">
+      <li><a href="../index.html">Home</a></li>
+      <li class="dropbtn"><a href="../projects.html">Analysis Dashboard</a></li>
+      <li class="dropbtn"><a href="index.html">File Browser</a></li>
+      <li><a href="https://ucsc-cgl.atlassian.net/wiki/">Wiki</a></li>
+      <li><a href="../about.html">About</a></li>
+   </ul>
+   
+   <body ng-controller="QueryController">
+
+      <div>  
+         <div class="container-fluid">
+            <div class="row-fluid"> 
+               <div class="span2 well text">
+                  <ul class="nav nav-sidebar">
+                     <li class="divider"></li>
+                     
+                        <li class="nav-header">Center</li>
+                        <div ng-repeat="item in results.center_name.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('center_name', item['key'])" ng-click="checking('center_name', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>
+                        </div>
+                        <li class="divider"></li> 
+                        
+                        <li class="nav-header">Program</li>
+                        <div ng-repeat="item in results.program.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('program', item['key'])" ng-click="checking('program', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>  
+                        </div>
+                        <li class="divider"></li> 
+      
+                        <li class="nav-header">Project</li>
+                        <div ng-repeat="item in results.project.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('project', item['key'])" ng-click="checking('project', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>  
+                        </div>
+                        <li class="divider"></li> 
+      
+                        <li class="nav-header">Workflow</li>
+                        <div ng-repeat="item in results.workflow.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('workflow', item['key'])" ng-click="checking('workflow', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>    
+                        </div>
+                        <li class="divider"></li> 
+         
+                        <li class="nav-header">Analysis Type</li>
+                        <div ng-repeat="item in results.analysis_type.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('analysis_type', item['key'])"  ng-click="checking('analysis_type', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>    
+                        </div>
+                        <li class="divider"></li> 
+         
+                        <li class="nav-header">Specimen Type</li>
+                        <div ng-repeat="item in results.specimen_type.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('specimen_type', item['key'])" ng-click="checking('specimen_type', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input>    
+                        </div>
+                        <li class="divider"></li>         
+         
+                        <li class="nav-header">File Type</li>
+                        <div ng-repeat="item in results.file_type.buckets">
+                           <input type="checkbox" ng-checked="hasCheck('file_type', item['key'])" ng-click="checking('file_type', item['key'])">
+                              {{item['key']}} <span class="muted">{{item['doc_count']}}</span>
+                           </input> 
+                        </div>
+                        <li class="divider"></li>    
+                         
+                     <li class="divider"></li>     
+                  </ul>
+               </div>
+         
+               <div class="span5 text">
+                  <div class="table-responsive">
+                     <table class="table table-striped">
+         
+                        <thead>
+                           <tr>
+                              <th>Project</th>
+                              <th>Donor</th>
+                              <th>Specimen Type</th>
+                              <th>Analysis Type</th>
+                              <th>Workflow</th>
+                              <th>File Type</th>
+                              <th>File</th>
+                              <th>Download ID</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           <tr ng-repeat="item in hits|limitTo:10">
+                              <td>{{item['_source']['project']}}</td>
+                              <td>{{item['_source']['donor']}}</td>
+                              <td>{{item['_source']['specimen_type']}}</td>
+                              <td>{{item['_source']['analysis_type']}}</td>
+                              <td>{{item['_source']['workflow']}}</td>
+                              <td>{{item['_source']['file_type']}}</td>
+                              <td>{{item['_source']['title']}}</td>
+                              <td>{{item['_source']['download_id']}}</td>            
+                           </tr>
+                        </tbody>
+                  
+                     </table>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      
+      <center>
+         <div>  
+            <button class="button" ng-click="refresh(-1);"> {{back}} </span></button>
+               <span ng-click="refresh(1);" placeholder="{{next}}"> <button class="button">{{next}} </button>
+                  Page: {{offset+1}} {{of}} {{poutof}}
+               </span>
+            <button class="button"><span ng-click="downloadfile();">Download Manifest</span></button>
+         </div>
+      </center>
+      
+      <hr>
+      
+      <center>
+         <table>
+            <td id="piechartWorkflow"></td>
+            <td id="piechartAnalysis"></td>
+            <td id="piechartFile"></td>
+         </table>
+      </center>
+   
+      <footer class="text">
+         <section style="color: white">UCSC Genomics Institute - Analysis Core
+            <ul class="header" style="float: right; font-size:50%; padding: 4px;">
+               <li><a href="index.html">Home</a></li>
+               <li><a href="projects.html">Projects</a></li>
+               <li><a href="https://ucsc-cgl.atlassian.net/wiki/">Wiki</a></li>
+               <li><a href="about.html">About</a></li>
+            </ul>
+         </section>
+      </footer>
+      
+   </body>
+</html>
