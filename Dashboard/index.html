@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
-<link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
-<link rel="stylesheet" type="text/css" href="mystyle.css">
-<script src="d3.v3.min.js"></script>
+   <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
+   <title>Home</title>
+   <link rel="stylesheet" type="text/css" href="mystyle.css">
+   <script src="d3.v3.min.js"></script>
+   <script src="w3data.js"></script>
+   <script src="jquery-3.1.0.min.js"></script>
 </head>
 <style>
 body{
@@ -52,6 +55,7 @@ button {
    </div>
   <li><a href="https://ucsc-cgl.atlassian.net/wiki/">Wiki</a></li>
   <li><a href="about.html">About</a></li>
+  <li><a href="table.html">Table</a></li>
 </ul>
 <header class="text">
    <h1>Analysis Dashboard</h1>
@@ -230,6 +234,7 @@ var layers = stack(nest.entries(data));
 </script>
 </div>
 <br> <p> This website is still being tested. </p>
+<p> <div id="text"> <script>$('#text').load("date.txt");</script> </div> <p>
 </body>
 
 
@@ -240,6 +245,7 @@ var layers = stack(nest.entries(data));
    <li><a href="projects.html">Projects</a></li>
    <li><a href="https://ucsc-cgl.atlassian.net/wiki/">Wiki</a></li>
    <li><a href="about.html">About</a></li>
+   <li><a href="table.html">Table</a></li>
 </ul>
 </section>
 </footer>

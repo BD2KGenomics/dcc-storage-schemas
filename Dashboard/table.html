@@ -2,8 +2,8 @@
 <meta charset="utf-8">
 <head>
    <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
-	<title>Error</title>
-   <link rel="stylesheet" type="text/css" href="mystyle.css">
+	<title>Table</title>
+	<link rel="stylesheet" type="text/css" href="mystyle.css">
 </head>
 <div class="imgcgl">
    <div class="imgcontainer">
@@ -29,12 +29,46 @@
   <li><a href="about.html">About</a></li>
   <li><a href="table.html">Table</a></li>
 </ul>
+
 <header class="text">
-   <h1>Error</h1>
+   <h1>Tables</h1>
    <p> This website is still being tested. </p>
 </header>
 <body style = "background-color:#F5F4EB;" class="text">
-<p> This page does not exist yet, sorry! Try one of the links above.</p>
+
+<script src="d3.v3.min.js"></script>
+
+<script>
+   d3.tsv("sample.tsv", function(error, data) {
+      // create table
+      var table = d3.select('body')
+         .append('table');
+      data.forEach(function(d) {
+         d.Program = d.Program;
+         d.Project = d.Project;
+         console.log(data[0]);
+         console.log(d.Program);
+      });
+
+
+
+    // create table header
+    table.append('thead').append('tr')
+        .selectAll('th')
+        .data(data[0]).enter()
+        .append('th')
+
+    // create table body
+    table.append('tbody')
+        .selectAll('tr')
+        .data(data[2]).enter()
+        .append('tr')
+        .selectAll('td')
+        
+});
+    </script>
+
+<a href="sample.tsv" download="sample.tsv">Download link</a>
 
 </body>
 <footer class="text">

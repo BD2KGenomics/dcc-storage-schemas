@@ -2,6 +2,7 @@
 
 from elasticsearch import Elasticsearch
 import json
+from time import strftime
 
 es_host = 'localhost:9200'
 es_type = "meta"
@@ -9,8 +10,8 @@ es = Elasticsearch([es_host])
 
 es_name_query = [
    "All normal and tumor fastq exist.",
-   "Fastq normal and tumor exist, no alignment.",
-   "Alignment normal and tumor exist, no somatic.",
+   "Fastq normal and tumor exist. no alignment.",
+   "Alignment normal and tumor exist. no somatic.",
    "All flags are true. All documents exist."
 ]
 
@@ -53,14 +54,14 @@ es_queries = [
                            "must": [
                               {
                                  "terms": {
-                                    "flags.all_normal_sequence_exists_flag": [
+                                    "flags.normal_sequence": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_sequences_exists_flag": [
+                                    "flags.tumor_sequence": [
                                        'true'
                                     ]
                                  }
@@ -116,14 +117,14 @@ es_queries = [
                            "must": [
                               {
                                  "terms": {
-                                    "flags.all_normal_sequence_exists_flag": [
+                                    "flags.normal_sequence": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_sequences_exists_flag": [
+                                    "flags.tumor_sequence": [
                                        'true'
                                     ]
                                  }
@@ -132,14 +133,14 @@ es_queries = [
                            "must_not": [
                               {
                                  "terms": {
-                                    "flags.all_normal_alignment_exists_flag": [
+                                    "flags.normal_alignment": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_alignment_exists_flag": [
+                                    "flags.tumor_alignment": [
                                        'true'
                                     ]
                                  }
@@ -193,14 +194,14 @@ es_queries = [
                            "must": [
                               {
                                  "terms": {
-                                    "flags.all_normal_alignment_exists_flag": [
+                                    "flags.normal_alignment": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_alignment_exists_flag": [
+                                    "flags.tumor_alignment": [
                                        'true'
                                     ]
                                  }
@@ -209,7 +210,7 @@ es_queries = [
                            "must_not": [
                               {
                                  "terms": {
-                                    "flags.all_tumor_somatic_variants_exists_flag": [
+                                    "flags.tumor_somatic_variants": [
                                        'true'
                                     ]
                                  }
@@ -266,56 +267,56 @@ es_queries = [
                            "must": [
                               {
                                  "terms": {
-                                    "flags.all_normal_sequence_exists_flag": [
+                                    "flags.normal_sequence": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_sequences_exists_flag": [
+                                    "flags.tumor_sequence": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_normal_alignment_exists_flag": [
+                                    "flags.normal_alignment": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_alignment_exists_flag": [
+                                    "flags.tumor_alignment": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_normal_germline_variants_exists_flag": [
+                                    "flags.normal_germline_variants": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_somatic_variants_exists_flag": [
+                                    "flags.tumor_somatic_variants": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_normal_rnaseq_variants_exists_flag": [
+                                    "flags.normal_rnaseq_variants": [
                                        'true'
                                     ]
                                  }
                               },
                               {
                                  "terms": {
-                                    "flags.all_tumor_rnaseq_variants_exists_flag": [
+                                    "flags.tumor_rnaseq_variants": [
                                        'true'
                                     ]
                                  }
@@ -334,7 +335,6 @@ es_queries = [
    #all flags are 'true'
    #How many donors are complete in their upload vs. how many have one or more missing samples?
 ]
-
 #checking if the word represents a number
 def repNum(s):
     try: 
@@ -374,29 +374,35 @@ for hit in res['hits']['hits']:
    print("CENTER: %(center_name)s PROGRAM: %(program)s PROJECT: %(project)s DONOR ID: %(submitter_donor_id)s" % hit["_source"])
 
 print "\n"
-with open("data.json", 'a') as outfile:
-   outfile.write('[')
-#querying documents using queries above
-   addingcommas = False
-   for q_index in range(len(es_queries)):
-      if (addingcommas):
-         outfile.write(', ')
-      else:
-         addingcommas = True
-      response = es.search(index="analysis_index", body=es_queries[q_index])
-      #print(json.dumps(response, indent=2))
-      count = 0
-      program = "NA"
-      project = "NA"
-      for p in response['aggregations']['project_f']['project'].get('buckets'):
-         count = p.get('doc_count')
-         program = p.get('donor_id').get('buckets')
-         project = p.get('key')
+with open("data.csv", 'a') as outfile1:
+   with open("data.json", 'w') as outfile:
+      outfile.write('[')
+   #querying documents using queries above
+      addingcommas = False
+      for q_index in range(len(es_queries)):
+         if (addingcommas):
+            outfile.write(', ')
+         else:
+            addingcommas = True
+         response = es.search(index="analysis_index", body=es_queries[q_index])
+         #print(json.dumps(response, indent=2))
+         count = 0
+         program = "NA"
+         project = "NA"
+         for p in response['aggregations']['project_f']['project'].get('buckets'):
+            count = p.get('doc_count')
+            program = p.get('donor_id').get('buckets')
+            project = p.get('key')
    
-      print(es_name_query[q_index])
-      print("count: "+str(count))
-      print("program: ", program)
-      print("project: ", project)
-      print("\n")
-      outfile.write('{"Label": "'+es_name_query[q_index]+'", "Count": '+str(count)+'}')
-   outfile.write(']')
+         print(es_name_query[q_index])
+         print("count: "+str(count))
+         print("program: ", program)
+         print("project: ", project)
+         print("\n")
+         outfile.write('{"Label": "'+es_name_query[q_index]+'", "Count": '+str(count)+'}')
+         outfile1.write("\n"+es_name_query[q_index]+","+str(count)+","+str(strftime("%m/%d/%y")))
+      outfile.write(']')
+
+with open("date.txt","w") as outfile2:
+   outfile2.write("Date Updated: ")
+   outfile2.write(str(strftime("%m/%d/%Y %I:%M%p")))

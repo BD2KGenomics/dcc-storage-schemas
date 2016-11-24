@@ -117,12 +117,11 @@ file in Chrome.  The commands below will display the second JSON document. On a 
 
 ## Load and Query Elasticsearch
 
-In the query_on_merge folder, you will find a queryable document, compact_single.json and a sample query, jquery1.
-Start by running Elasticsearch, then to add the compact_single.json to your node by
+Start by running Elasticsearch, then to add the elasticsearch.jsonl to your node by
 
     curl -XPUT http://localhost:9200/analysis_index/_bulk?pretty --data-binary @elasticsearch.jsonl
 
-Then check to see if index has been created. (Should have five documents).
+Then check to see if index has been created.
 
     curl 'localhost:9200/_cat/indices?v'
 
@@ -130,31 +129,21 @@ Query everything.
 
     curl -XGET http://localhost:9200/analysis_index/_search?pretty
 
-And query.
-
-    curl -XPOST http://localhost:9200/analysis_index/_search?pretty -d @query_on_merge/jquery1
-
-Since merge.py now adds flags, you can find a queryable document, mergeflag.json and sample queries, jqueryflag. Add this document in the same fashion to a new index. Then query with:
-
-    curl -XPOST http://localhost:9200/analysis_index/_search?pretty -d @query_on_merge/jqueryflag
-
-However, the problem with this method is that only the first query is performed.
-
-esquery.py can perform all of the queries (elasticsearch needs to be installed. pip install elasticsearch). Run using:
+esquery.py can perform the queries (elasticsearch needs to be installed. pip install elasticsearch). Run using:
 
     python esquery.py
 
-If running esquery.py multiple times, remove the index with:
+Remove the index with:
 
     curl -XDELETE http://localhost:9200/analysis_index
 
 ## Dashboard
 
-esquery.py will create an outfile called data.json. Add data.json along with the contents of the folder "Dashboard" to an AWS bucket and configure bucket according to the [AWS instructions on hosting a static website (steps 1, 2, and 3)] (http://docs.aws.amazon.com/gettingstarted/latest/swh/getting-started-create-bucket.html). 
+esquery.py will create an outfile called data.json, data.csv, and date.txt. Add the contents of the folder "Dashboard" (with the exception of esquery.py) to an AWS bucket and configure bucket according to the [AWS instructions on hosting a static website (steps 1, 2, and 3)] (http://docs.aws.amazon.com/gettingstarted/latest/swh/getting-started-create-bucket.html). 
 
-To see the Dashboard, from your bucket, go to Properties, Static Website Hosting, and click on the link following "Endpoint." This directs you to index.html, with a static streamgraph (uses data.csv). Using the navagation, hover over Projects, then click Project 1 to see a bar chart using data.json.
+To see the Dashboard, from your bucket, go to Properties, Static Website Hosting, and click on the link following "Endpoint." This directs you to index.html, with a streamgraph (uses data.csv). Using the navagation, hover over Projects, then click Project 1 to see a bar chart using data.json.
 
-Alternatively, run the Dashboard locally. Add data.json to the Dashboard folder and open index.html in Safari.
+Alternatively, run the Dashboard locally. Open index.html in Safari.
 
 ## Demo
 
