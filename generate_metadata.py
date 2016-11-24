@@ -21,6 +21,7 @@ import subprocess
 import datetime
 import copy
 import semver
+from tqdm import tqdm
 
 # methods and functions
 
@@ -765,6 +766,7 @@ def main():
     flatMetadataObjs = []
 
     # iter over input files
+    logging.info("generate meatadata objects")
     for fileName in args:
         try:
             # attempt to process as xls file
@@ -831,7 +833,11 @@ def main():
     counts["bundlesUploaded"] = 0
 
     # first pass uploads data bundles
+    logging.info("upload data bundles")
+    progressTotal = 0
     for dirName, subdirList, fileList in os.walk(options.metadataOutDir):
+        progressTotal += 1
+    for dirName, subdirList, fileList in tqdm(os.walk(options.metadataOutDir), total=progressTotal):
         if dirName == options.metadataOutDir:
             continue
         if len(subdirList) != 0:

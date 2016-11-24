@@ -6,11 +6,11 @@ ACCESS_TOKEN=`cat ucsc-storage-client/accessToken`
 
 test2:
 	python ./generate_metadata.py \
-		--inputMetadataSchema input_metadata.json \
-		--metadataSchema metadata_schema.json \
-		--awsAccessToken $(ACCESS_TOKEN) \
+		--input-metadata-schema input_metadata.json \
+		--metadata-schema metadata_schema.json \
+		--storage-access-token $(ACCESS_TOKEN) \
 		--test \
-		--skip-upload \
+		--force-upload \
 		$(XL_FILE) \
 	;
 
@@ -19,9 +19,9 @@ test:
 	> 1.tmp ;
 	\
 	python ./generate_metadata.py \
-		--inputMetadataSchema input_metadata.json \
-		--metadataSchema metadata_schema.json \
-		--awsAccessToken $(ACCESS_TOKEN) \
+		--input-metadata-schema input_metadata.json \
+		--metadata-schema metadata_schema.json \
+		--storage-access-token $(ACCESS_TOKEN) \
 		--force-upload \
 		1.tmp \
 	;
