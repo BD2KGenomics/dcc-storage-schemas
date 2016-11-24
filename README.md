@@ -97,11 +97,11 @@ it easy to avoid in the future. The file is based on [this](https://docs.google.
 
 This tool takes multiple JSON files (see above) and merges them so we can have a donor-oriented single JSON document suitable for indexing in Elasticsearch.  It takes a list of directories that contain *.json files.  This command will read and download the json files from the endpoint. In addition to creating a `validated.jsonl` file it will also create a `endpoint_metadata/` directory that contains all of the json files that were downloaded.
 
-    python merge_gen_meta.py --only_Program TEST --only_Project TEST --awsAccessToken `cat ucsc-storage-client/accessToken`  --clientPath ucsc-storage-client/ --metadataSchema metadata_schema.json
+    python merge_gen_meta.py --storage-access-token `cat ucsc-storage-client/accessToken`  --client-path ucsc-storage-client/ --metadata-schema metadata_schema.json
 
 This command will not download json files, instead the user will provide a directory that contains json files.
 
-    python merge_gen_meta.py --only_Program TEST --only_Project TEST --test_directory output_metadata_7_20/ --metadataSchema metadata_schema.json
+    python merge_gen_meta.py --test-directory output_metadata/ --metadata-schema metadata_schema.json
     
 This produces a `validated.jsonl` and a `invalid.jsonl` file which is actually a JSONL file, e.g. each line is a JSON document.
 Now to view the output for the first line use the following:

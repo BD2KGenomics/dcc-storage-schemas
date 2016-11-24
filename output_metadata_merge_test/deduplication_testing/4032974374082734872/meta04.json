@@ -3,7 +3,7 @@
   "donor_uuid": "b121a26b-282c-5830-9084-c3b74bb56fc0",
   "program": "TEST",
   "project": "TEST",
-  "schema_version": "0.0.2",
+  "schema_version": "1.0.0",
   "specimen": [
     {
       "samples": [

@@ -303,7 +303,7 @@ def getWorkflowObjects(flatMetadataObjs):
     """
     For each flattened metadata object, build up a metadataObj with correct structure.
     """
-    schema_version = "0.0.3"
+    schema_version = "1.0.0"
     num_files_written = 0
 
     commonObjMap = {}

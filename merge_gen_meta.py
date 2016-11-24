@@ -4,7 +4,9 @@
 #   Description:This script merges metadata json files into one jsonl file. Each json object is grouped by donor and then each individual
 #   donor object is merged into one jsonl file.
 #
-#   Usage: python merge_gen_meta.py --only_Program TEST --only_Project TEST --awsAccessToken `cat ucsc-storage-client/accessToken`  --clientPath ucsc-storage-client/ --metadataSchema metadata_schema.json
+#   Usage: python merge_gen_meta.py --storage-access-token `cat ucsc-storage-client/accessToken` --client-path ucsc-storage-client --metadata-schema metadata_schema.json 
+#
+
 
 
 import semver
@@ -186,10 +188,14 @@ def load_json_arr(input_dir, data_arr):
                         json_obj = load_json_obj(current_file)
                         data_arr.append(json_obj)
                     except ValueError:
+                        logging.error("ERROR PARSING JSON: will skip this record.")
                         print "ERROR PARSING JSON: will skip this record."
 
 
 def skip_option(donorLevelObjs, option_skip, key):
+    """
+    Removes json objects from an array that have the same value as option_skip.
+    """
     for json_obj in donorLevelObjs:
         keys = json_obj[key]
         if keys == option_skip:
@@ -198,6 +204,9 @@ def skip_option(donorLevelObjs, option_skip, key):
 
 
 def only_option(donorLevelObjs,option_only, key):
+    """
+    Removes json objects from an array that do not have the same value as option_only.
+    """
     for json_obj in donorLevelObjs:
         keys = json_obj[key]
         if keys != option_only:
@@ -417,13 +426,13 @@ def allHaveItems(lenght):
     return result
 
 
-def arrayMissingItems(itemsName, regex, items,submitter_specimen_types):
+def arrayMissingItems(itemsName, regex, donor_object,submitter_specimen_types):
     """
     Returns a list of 'sample_uuid' for the analysis that were missing.
     """
     analysis_type = False
     results = []
-    for specimen in items['specimen']:
+    for specimen in donor_object['specimen']:
         if re.search(regex, specimen['submitter_specimen_type']):
             submitter_specimen_types.append(specimen['submitter_specimen_type'])
             for sample in specimen['samples']:
@@ -446,24 +455,27 @@ def createFlags(uuid_to_donor):
     uuid_to_donor: dictionary that maps uuid with its json object.
     Creates and adds "flags" and "missing_items" to each donor object.
     """
+    specimen_type_Normal= "^Normal - "
+    specimen_type_Tumour= "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -"
+    
     for uuid in uuid_to_donor:
         json_object = uuid_to_donor[uuid]
         submitter_specimen_types=[]
-        flagsWithArrs = {'normal_sequence': arrayMissingItems('sequence_upload', "^Normal - ", json_object,submitter_specimen_types),
+        flagsWithArrs = {'normal_sequence': arrayMissingItems('sequence_upload', specimen_type_Normal, json_object,submitter_specimen_types),
                          'tumor_sequence': arrayMissingItems('sequence_upload',
-                                                             "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
+                                                             specimen_type_Tumour,
                                                              json_object,submitter_specimen_types),
-                         'normal_alignment': arrayMissingItems('alignment', "^Normal - ", json_object,submitter_specimen_types),
+                         'normal_alignment': arrayMissingItems('alignment', specimen_type_Normal, json_object,submitter_specimen_types),
                          'tumor_alignment': arrayMissingItems('alignment',
-                                                              "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
+                                                              specimen_type_Tumour,
                                                               json_object,submitter_specimen_types),
-                         'normal_rnaseq_variants': arrayMissingItems('rna_seq_quantification', "^Normal - ", json_object,submitter_specimen_types),
+                         'normal_rnaseq_variants': arrayMissingItems('rna_seq_quantification', specimen_type_Normal, json_object,submitter_specimen_types),
                          'tumor_rnaseq_variants': arrayMissingItems('rna_seq_quantification',
-                                                                    "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
+                                                                    specimen_type_Tumour,
                                                                     json_object,submitter_specimen_types),
-                         'normal_germline_variants': arrayMissingItems('germline_variant_calling', "^Normal - ", json_object,submitter_specimen_types),
+                         'normal_germline_variants': arrayMissingItems('germline_variant_calling', specimen_type_Normal, json_object,submitter_specimen_types),
                          'tumor_somatic_variants': arrayMissingItems('somatic_variant_calling',
-                                                                     "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
+                                                                     specimen_type_Tumour,
                                                                      json_object,submitter_specimen_types)}
 
 
@@ -482,9 +494,7 @@ def createFlags(uuid_to_donor):
         flagsWithStr = {'normal_sequence' :allHaveItems(normal_sequence),
                         'tumor_sequence': allHaveItems(tumor_sequence),
                         'normal_alignment': allHaveItems(normal_alignment),
-                        'normal_alignment_qc_report': allHaveItems(normal_alignment_qc_report),
                         'tumor_alignment': allHaveItems(tumor_alignment),
-                        'tumor_alignment_qc_report': allHaveItems(tumor_alignment_qc_report),
                         'normal_rnaseq_variants': allHaveItems(normal_rnaseq_variants),
                         'tumor_rnaseq_variants': allHaveItems(tumor_rnaseq_variants),
                         'normal_germline_variants': allHaveItems(normal_germline_variants),
@@ -495,7 +505,7 @@ def createFlags(uuid_to_donor):
         normal_type= False
         tumor_type= False
         for specimen_type in submitter_specimen_types:
-            if re.search("^Normal - ",specimen_type):
+            if re.search(specimen_type_Normal ,specimen_type):
                 normal_type= True
             else:
                 tumor_type= True
