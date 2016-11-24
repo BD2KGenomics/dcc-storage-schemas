@@ -265,12 +265,24 @@ def insert_detached_metadata(detachedObjs, uuid_mapping):
                             new_workflow_version = detachedObjs["workflow_version"]
 
                             saved_version = analysisObj["workflow_version"]
-                            # current is older than new
-                            if semver.compare(saved_version, new_workflow_version) == -1:
-                                sample["analysis"].remove(analysisObj)
-                                sample["analysis"].append(detachedObjs)
-                            if semver.compare(saved_version, new_workflow_version) == 0:
-                                # use the timestamp
+
+                            try:
+                                # current is older than new
+                                if semver.compare(saved_version, new_workflow_version) == -1:
+                                    sample["analysis"].remove(analysisObj)
+                                    sample["analysis"].append(detachedObjs)
+                                if semver.compare(saved_version, new_workflow_version) == 0:
+                                    # use the timestamp
+                                    if "timestamp" in detachedObjs and "timestamp" in analysisObj:
+                                        saved_timestamp = dateutil.parser.parse(analysisObj["timestamp"])
+                                        new_timestamp = dateutil.parser.parse(detachedObjs["timestamp"])
+
+                                        timestamp_diff = saved_timestamp - new_timestamp
+                                        if timestamp_diff.total_seconds() < 0:
+                                            sample["analysis"].remove(analysisObj)
+                                            sample["analysis"].append(detachedObjs)
+                            except ValueError:
+                                print "ERROR comparing semantic version, falling back on timestamp"
                                 if "timestamp" in detachedObjs and "timestamp" in analysisObj:
                                     saved_timestamp = dateutil.parser.parse(analysisObj["timestamp"])
                                     new_timestamp = dateutil.parser.parse(detachedObjs["timestamp"])
@@ -445,6 +457,8 @@ def createFlags(uuid_to_donor):
     """
     uuid_to_donor: dictionary that maps uuid with its json object.
     Creates and adds "flags" and "missing_items" to each donor object.
+    TODO: this will need to be expanded over time as our analysis types increase
+    FIXME: the logic isn't quite right when normal or tumors are missing
     """
     for uuid in uuid_to_donor:
         json_object = uuid_to_donor[uuid]
@@ -457,6 +471,10 @@ def createFlags(uuid_to_donor):
                          'tumor_alignment': arrayMissingItems('alignment',
                                                               "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
                                                               json_object,submitter_specimen_types),
+                         'normal_alignment_qc_report': arrayMissingItems('alignment_qc_report', "^Normal - ", json_object,submitter_specimen_types),
+                         'tumor_alignment_qc_report': arrayMissingItems('alignment_qc_report',
+                                                              "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
+                                                              json_object,submitter_specimen_types),
                          'normal_rnaseq_variants': arrayMissingItems('rna_seq_quantification', "^Normal - ", json_object,submitter_specimen_types),
                          'tumor_rnaseq_variants': arrayMissingItems('rna_seq_quantification',
                                                                     "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
@@ -465,17 +483,17 @@ def createFlags(uuid_to_donor):
                          'tumor_somatic_variants': arrayMissingItems('somatic_variant_calling',
                                                                      "^Primary tumour - |^Recurrent tumour - |^Metastatic tumour -",
                                                                      json_object,submitter_specimen_types)}
-
+#
 
         normal_sequence= len(flagsWithArrs["normal_sequence"])
         normal_alignment= len(flagsWithArrs["normal_alignment"])
-        normal_alignment_qc_report= len(flagsWithArrs["normal_alignment"])
+        normal_alignment_qc_report= len(flagsWithArrs["normal_alignment_qc_report"])
         normal_rnaseq_variants= len(flagsWithArrs["normal_rnaseq_variants"])
         normal_germline_variants= len(flagsWithArrs["normal_germline_variants"])
 
         tumor_sequence= len(flagsWithArrs["tumor_sequence"])
         tumor_alignment= len(flagsWithArrs["tumor_alignment"])
-        tumor_alignment_qc_report= len(flagsWithArrs["tumor_alignment"])
+        tumor_alignment_qc_report= len(flagsWithArrs["tumor_alignment_qc_report"])
         tumor_rnaseq_variants= len(flagsWithArrs["tumor_rnaseq_variants"])
         tumor_somatic_variants= len(flagsWithArrs["tumor_somatic_variants"])
 
